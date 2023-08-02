@@ -70,6 +70,17 @@ class Stock_indicator:
 
         return self.val, self.sqz_on, self.sqz_off, self.no_sqz
 
+    
+    #스토캐스틱 slow
+    def calculate_stochastic_slow(self, k_period=20, d_period=10, k_slow_period=10):
+        self.highest_high = self.high_price.rolling(window=k_period).max()
+        self.lowest_low = self.low_price.rolling(window=k_period).min()
+        self.K_fast = 100 * ((self.close_price - self.lowest_low) / (self.highest_high - self.lowest_low))
+        self.D_slow = self.K_fast.rolling(window=d_period).mean()
+        self.K_slow = self.D_slow.rolling(window=k_slow_period).mean()
+        return self.D_slow, self.K_slow
+    
+
 
 
  
