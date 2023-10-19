@@ -1,16 +1,15 @@
-import FinanceDataReader as fdr
+import telegram
 
-def save_codes_with_fs_month(filename):
-    krx_list = fdr.StockListing("KRX")
-    
-    # 결산월(column: '결산월')이 결측치가 아닌 종목만 선택
-    filtered_list = krx_list[krx_list['SettleMonth'].notna()]
-    
-    codes = filtered_list['Symbol']
-
-    with open(filename, "w") as f:
-        for code in codes:
-            f.write(f"{code}\n")
-
-filename = "code.txt"
-save_codes_with_fs_month(filename)
+import asyncio
+ 
+ 
+my_token = "6539259446:AAEr3Ck-9o92x4GQHiZIGQM-RSwSq9RmKsI"
+chat_id = 5467498555
+bot = telegram.Bot(token=my_token)
+ 
+ 
+async def send_message(text):
+    await bot.sendMessage(chat_id=chat_id, text=text)
+ 
+ 
+asyncio.run(send_message('python-telegram-bot sendmessage test'))

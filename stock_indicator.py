@@ -93,7 +93,10 @@ class Stock_indicator:
         self.sqz_on = (self.LowerBB > self.LowerKC) & (self.UpperBB < self.UpperKC)
         self.sqz_off = (self.LowerBB < self.LowerKC) & (self.UpperBB > self.UpperKC)
         self.no_sqz = (~self.sqz_on) & (~self.sqz_off)
-       
+        # self.sqz_on = (self.LowerBB > self.LowerKC) and (self.UpperBB < self.UpperKC)
+        # self.sqz_off = (self.LowerBB < self.LowerKC) and (self.UpperBB > self.UpperKC)
+        # self.no_sqz = (self.sqz_on == False) and (self.sqz_off == False)
+
         # Calculate Squeeze Momentum value
         self.highest_high = self.high_price.rolling(window=periodKC).max()
         self.lowest_low = self.low_price.rolling(window=periodKC).min()
@@ -115,3 +118,139 @@ class Stock_indicator:
         return self.D_slow, self.K_slow
     
 
+    #10 indicator
+    # RSI, MACD, 200sma, 100sma, 75ema, 55ema, 50sma, 20ema, 13/48cross, pivot_level
+    
+    # RSI 계산 함수
+    def calculate_rsi(self, period=14):   # RSI를 계산하는 함수를 정의하며, 기본적으로 14일 기간을 사용합니다.
+        delta = self.close_price.diff(1)   # 가격 데이터의 차이를 계산합니다.
+        gain = delta.where(delta > 0, 0)   # 양의 차이(상승)를 추출합니다.
+        loss = -delta.where(delta < 0, 0)  # 음의 차이(하락)를 추출합니다.
+
+        avg_gain = gain.rolling(window=period, min_periods=1).mean()  # 이동평균을 계산하여 양의 차이의 평균을 구합니다.
+        avg_loss = loss.rolling(window=period, min_periods=1).mean()  # 이동평균을 계산하여 음의 차이의 평균을 구합니다.
+
+        relative_strength = avg_gain / avg_loss  # 상대적인 강도를 계산합니다.
+        self.rsi = 100 - (100 / (1 + relative_strength))  # RSI 값을 계산합니다.
+        
+        return self.rsi  # RSI 값을 반환합니다.
+    
+
+    # MACD 계산 함수
+    def calculate_macd(self, short_window=12, long_window=26, signal_window=9):
+        # 단기 이동평균
+        short_ema = self.close_price.ewm(span=short_window, adjust=False).mean()
+        
+        # 장기 이동평균
+        long_ema = self.close_price.ewm(span=long_window, adjust=False).mean()
+        
+        # MACD (단기 이동평균 - 장기 이동평균)
+        self.macd = short_ema - long_ema
+        
+        # MACD의 시그널 라인 (MACD의 이동평균)
+        self.signal_line = self.macd.ewm(span=signal_window, adjust=False).mean()
+        
+        # MACD 히스토그램 (MACD - 시그널 라인)
+        self.macd_histogram = self.macd - self.signal_line
+        
+        return self.macd, self.signal_line, self.macd_histogram
+
+    # 각 항목 계산하고 true 갯수를 출력해보자.
+    #10 indicator
+    # RSI, MACD, 200sma, 100sma, 75ema, 55ema, 50sma, 20ema, 13/48cross, pivot_level
+    
+
+    # 이동평균 계산 함수
+    def calculate_averages(self, periods):
+        self.averages = pd.DataFrame()
+        for period in periods:
+            if 'sma' in period:
+                window = int(period.replace('sma', ''))
+                self.averages[period] = self.close_price.rolling(window=window).mean()
+            elif 'ema' in period:
+                span = int(period.replace('ema', ''))
+                self.averages[period] = self.close_price.ewm(span=span, adjust=False).mean()
+        
+        return self.averages
+    
+    '''
+    def calc_10indicator(self):
+        self.sum_indi = 0
+        self.calculate_macd()
+        self.calculate_rsi()
+        periods = ['200sma', '100sma', '75ema', '55ema', '50sma', '20ema']
+        self.calculate_averages(periods)
+        print(self.averages)
+        for average in self.averages:
+           if self.close_price > average:
+               self.sum_indi += 1
+        if self.rsi > 55 and self.rsi:
+            self.sum_indi += 1
+        if self.macd > 0 and self.macd:
+            self.sum_indi += 1
+        
+        average13 = self.close_price.ewm(span = 13, adjust=False).mean()
+        average48 = self.close_price.ewm(span = 48, adjust=False).mean()
+
+        if average13 > average48 and average13:
+            self.sum_indi += 1
+
+        return self.sum_indi
+    '''
+
+    # def calc_10indicator(self):
+    #     self.sum_indi = pd.DataFrame()
+
+    #     # 이동평균 및 MACD, RSI 계산
+    #     self.calculate_macd()
+    #     self.calculate_rsi()
+    #     periods = ['200sma', '100sma', '75ema', '55ema', '50sma', '20ema']
+    #     self.calculate_averages(periods)
+
+    #     # 각 이동평균에 대한 조건 검사
+    #     for period in periods:
+    #         if (self.close_price > self.averages[period]).all():
+    #             self.sum_indi += 1
+
+    #     # RSI와 MACD 조건 검사
+    #     if (self.rsi is not None and self.rsi > 55).all():
+    #         self.sum_indi += 1
+    #     if (self.macd is not None and self.macd > 0).all():
+    #         self.sum_indi += 1
+
+    #     # 13일 이동평균과 48일 이동평균 조건 검사
+    #     average13 = self.close_price.ewm(span=13, adjust=False).mean()
+    #     average48 = self.close_price.ewm(span=48, adjust=False).mean()
+    #     if average13 is not None and average48 is not None and (average13 > average48).all():
+    #         self.sum_indi += 1
+
+    #     return self.sum_indi
+
+    def calc_10indicator(self):
+        # 이동평균 및 MACD, RSI 계산
+        self.calculate_macd()
+        self.calculate_rsi()
+        periods = ['200sma', '100sma', '75ema', '55ema', '50sma', '20ema']
+        self.calculate_averages(periods)
+
+        # 각 조건에 대한 조건 검사
+        self.sum_indi = pd.DataFrame()
+
+        for period in periods:
+            self.sum_indi[period] = (self.close_price > self.averages[period]).astype(int)
+
+        # RSI와 MACD 조건 검사
+        self.sum_indi['rsi_condition'] = ((self.rsi > 55) & (self.rsi.notna())).astype(int)
+        self.sum_indi['macd_condition'] = ((self.macd > 0) & (self.macd.notna())).astype(int)
+
+        # 13일 이동평균과 48일 이동평균 조건 검사
+        average13 = self.close_price.ewm(span=13, adjust=False).mean()
+        average48 = self.close_price.ewm(span=48, adjust=False).mean()
+        self.sum_indi['average13_condition'] = ((average13 > average48) & (average13.notna()) & (average48.notna())).astype(int)
+
+        # 각 조건에 따라 총합 계산
+        self.sum_indi['total_sum'] = self.sum_indi.sum(axis=1)
+
+        return self.sum_indi['total_sum']
+    ##야 피봇 빼먹었다. 피봇 만드는거도 해봐라
+    
