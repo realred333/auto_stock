@@ -24,10 +24,10 @@ def buy_quantity(code, close, money = 1000000):
     atr = si.calculate_atr()
     quantity = round((money * 0.02)/(atr[-1]))
 
-    if close[-1] * quantity < 1000000:
+    if (close[-1] * quantity) < 2000000:
         return quantity
     else:
-        return
+        return 0
 
 '''
 
@@ -58,7 +58,7 @@ def read_ticker_file(filename):
     return codes
 
 import os
-filename = os.path.abspath("code1.txt")
+filename = os.path.abspath("kosdaq.txt")
 
 def status_sq():
     momentum_vals, squeeze_on, squeeze_off, no_squeeze = si.squeeze_momentum()
@@ -84,10 +84,6 @@ for code in tqdm(codes):
     try:    
         stock_df = fdr.DataReader(code, '2022')
         si = Stock_indicator(stock_df)
-        buycond = status_sq()
-        atr = si.calculate_atr(20)
-        close = si.close_price
-        quantity = buy_quantity(code, close)
         
         sum_indi = si.calc_10indicator()
         # print(sum_indi)
@@ -97,17 +93,34 @@ for code in tqdm(codes):
             print(code)
             print(sum_indi)
         # print(code)
-        '''
-        if buycond == '신호 떴다. 사러 가자':
-            print(f"{code} 종목 {buycond} {quantity}개 사라. {code} 종목의 오늘 종가는 {close[-1]}원 이고 ATR은 {atr[-1]}원 이다.")
-            codelist.append(code)
-            #print(f"{code} 종목 신호 떴다. {quantity}개 사라")
-        else:
-            #print(f"{code} 종목의 오늘 종가는 {close[-1]}원 이고 ATR은 {atr[-1]}원 이다.")
-            pass
-            '''
+        
     except Exception as e:
         print(f"An error occurred: {e}")
         pass
 
 print(codelist)
+#매수 예정 목록 파일로 저장
+with open('buy_list.txt', 'w') as file:
+    for code in codelist:
+        file.write(code + '\n')
+
+buy_amount = 0
+
+for code in codelist:
+    
+    stock_df = fdr.DataReader(code, '2022')
+    si = Stock_indicator(stock_df)
+    buycond = status_sq()
+    atr = si.calculate_atr(20)
+    close = si.close_price
+    quantity = buy_quantity(code, close)
+    buy_amount += close[-1] * quantity
+
+    print(f"{code} 종목의 오늘 종가는 {close[-1]}원 이고 ATR은 {atr[-1]}원 이다. 총 매수금액은 {close[-1] * quantity}원, 목표가는 {close[-1] + (atr[-1] * 2)}원 손절가는 {close[-1] - atr[-1]}원 목표 수익률은 {(atr[-1] *2)/close[-1] * 100}%임.")
+    if buycond == '신호 떴다. 사러 가자':
+        #print(f"{code} 종목 {buycond} {quantity}개 사라. {code} 종목의 오늘 종가는 {close[-1]}원 이고 ATR은 {atr[-1]}원 이다.")
+        print(f"{code} 종목 신호 떴다. {quantity}개 사라")
+    else:
+        #print(f"{code} 종목의 오늘 종가는 {close[-1]}원 이고 ATR은 {atr[-1]}원 이다.")
+        pass
+print(f"총 매수 금액 : {buy_amount}")
