@@ -252,11 +252,8 @@ class Stock_indicator:
         #주봉데이터 만들기
         self.weekly_data = self.df.resample('W').agg({'High': 'max', 'Low': 'min', 'Close': 'last'})
         self.pivot_point = (self.weekly_data['High'] + self.weekly_data['Low'] + self.weekly_data['Close']) / 3            
-        self.sum_indi['pivot_condition'] = self.close_price[-1] > self.pivot_point[-2]
+        self.sum_indi['pivot_condition'] = (self.close_price[-1] > self.pivot_point[-2]).astype(int)
 
         # 각 조건에 따라 총합 계산
         self.sum_indi['total_sum'] = self.sum_indi.sum(axis=1)
         return self.sum_indi['total_sum']
-    ##야 피봇 빼먹었다. 피봇 만드는거도 해봐라
-    # 주봉 데이터 계산
-    
